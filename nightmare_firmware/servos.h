@@ -12,14 +12,14 @@ class servo{
         static bool write_protection;
 
         /* dynamic objects */
-        uint8_t id;
-        uint8_t angle;
-        uint8_t active = false;
-        void move(int pos);
-        void move();
-        void detach();
-        void attach();
-        int read();
+        uint8_t id;             //servo id 1..26
+        uint8_t angle;          //servo angle -180..180
+        uint8_t active = false; //servo state; true on, false off
+        void move(int pos);     //move to pos
+        void move();            //move to angle (angle as buffer)
+        void detach();          //deactivate servo
+        void attach();          //activate servo
+        int read();             //read servo angle -180..180
 };
 
 #endif

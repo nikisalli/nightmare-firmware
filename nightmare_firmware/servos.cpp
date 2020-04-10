@@ -31,11 +31,11 @@
 #define SERVO_LED_ERROR_READ        3, 36
 
 void servo::init(int _tx_enb, int _rx_enb){
-	Serial2.begin(115200);
-	Serial2.setRxBufferSize(1024);
+	Serial2.begin(115200);          //initialize servo serial
+	Serial2.setRxBufferSize(1024);  //make sure the buffer doesn't overflow
   
-	pinMode(_tx_enb, OUTPUT);
-	pinMode(_rx_enb, OUTPUT);
+	pinMode(_tx_enb, OUTPUT);       //hardware tx enable pin
+	pinMode(_rx_enb, OUTPUT);       //hardware rx enable pin
 }
 
 template<typename T>
@@ -50,19 +50,19 @@ void servo_write(T t, Args... args) {
 }
 
 void servo_tx_enb() {
-	GPIO.out_w1ts |= (1 << SERVO_PIN_TX_ENB);
-	GPIO.out_w1tc |= (1 << SERVO_PIN_RX_ENB);
+	GPIO.out_w1ts |= (1 << SERVO_PIN_TX_ENB); //set tx 
+	GPIO.out_w1tc |= (1 << SERVO_PIN_RX_ENB); //clear rx
 }
 
 void servo_rx_enb() {
-	GPIO.out_w1tc |= (1 << SERVO_PIN_TX_ENB);
-	GPIO.out_w1ts |= (1 << SERVO_PIN_RX_ENB);
+	GPIO.out_w1tc |= (1 << SERVO_PIN_TX_ENB); //clear tx
+	GPIO.out_w1ts |= (1 << SERVO_PIN_RX_ENB); //set rx
 }
 
 void servo::move(int ang){
 	servo_tx_enb();
   
-	ang = limit(map(ang, -120, 120, 0, 1000),0,1000);
+	ang = limit(map(ang, -120, 120, 0, 1000),0,1000); //angle comes in 2 bytes, 0..1000 means -120..120
 	angle = ang;
 	servo_write(
 		SERVO_HEADER, 
@@ -131,43 +131,43 @@ void servo::detach(){
 }
 
 int servo::read(){
-  	servo::write_protection = true;
-  	Serial2.flush();
-  	servo_tx_enb();
+  	servo::write_protection = true;  //enable flag to make sure we can use the bus
+  	Serial2.flush();                 //wait for bus to clear
+  	servo_tx_enb();                  //enable write mode
 
-  	servo_write(
+  	servo_write(                     //request angle
 		SERVO_HEADER,
 		id,
 		SERVO_POS_READ,
 		~((byte)(id+0x1F))
   	);
 
-  	Serial2.flush();
-  	servo_rx_enb();
+  	Serial2.flush();                 //wait the request for it being sent
+  	servo_rx_enb();                  //enable listen mode
 
-  	unsigned long time = micros();
-  	while(Serial2.available() < 8){
+  	unsigned long time = micros();   //wait response with 5000ms timeout
+  	while(Serial2.available() < 8){  //TODO add error state if timeout reached
 		if((micros()-time)>5000){
-	  		return INT_MAX;
+	  		return INT_MAX;          //send INT_MAX flag if checksums don't match
 		}	
   	}
 
-  	while(Serial2.read() != 0x1C);
+  	while(Serial2.read() != 0x1C);   //wait for id byte
 
   	byte low = Serial2.read();
   	byte high = Serial2.read();
   	byte checksum = Serial2.read();
 
-  	byte checksum_ = (~((byte)(id+0x21+low+high)));
+  	byte checksum_ = (~((byte)(id+0x21+low+high))); //eval and compare checksum
   	if(checksum == checksum_){
-		int val = (low|(high<<8));
-		if(val > 32767){
+		int val = (low|(high<<8));   //convert the 2 bytes to an int
+		if(val > 32767){             //fix overflow if 0 is exceded (angle < -120)
 			val -= 65536;
 		}
-		angle = fmap(val,0,1000,-120,120);
+		angle = fmap(val,0,1000,-120,120); //hard set angle
 		return angle;
-  	} else {
+  	} else {                         //send INT_MAX flag if checksums don't match
 		return INT_MAX;
   	}
-  	servo::write_protection = false;
+  	servo::write_protection = false; //disable protection flag
 }
