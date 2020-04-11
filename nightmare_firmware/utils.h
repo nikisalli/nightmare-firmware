@@ -10,15 +10,15 @@
  * @param  out_max: higher out reference for interpolation
  * @retval value relative to out_min..out_max 
  */
-float map(float x, float in_min, float in_max, float out_min, float out_max);
+float fmap(float x, float in_min, float in_max, float out_min, float out_max);
 
 /**
  * @brief  clamp value to range
  * @param  val: input value
- * @param  downlimit: minimum value
- * @param  uplimit: maximum value
+ * @param  min: minimum value
+ * @param  max: maximum value
  * @retval clamped value
  */
-float clamp(float val, float downlimit, float uplimit);
+float limit(float val, float min, float max);
 
 #endif

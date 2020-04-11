@@ -157,7 +157,7 @@ int servo::read(){
 		if(val > 32767){             //fix overflow if 0 is exceded (angle < -120)
 			val -= 65536;
 		}
-		angle = fmap(val,0,1000,-120,120); //hard set angle
+		angle = map(val,0,1000,-120,120); //hard set angle
 		return angle;
   	} else {                         //send INT_MAX flag if checksums don't match
 		return INT_MAX;
