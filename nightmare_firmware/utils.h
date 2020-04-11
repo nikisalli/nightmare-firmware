@@ -19,6 +19,6 @@ float fmap(float x, float in_min, float in_max, float out_min, float out_max);
  * @param  max: maximum value
  * @retval clamped value
  */
-float limit(float val, float min, float max);
+float clamp(float val, float min, float max);
 
 #endif

@@ -68,7 +68,7 @@ void servo_rx_enb() {
 void servo::move(int ang){
 	servo_tx_enb();
   
-	ang = limit(map(ang, -120, 120, 0, 1000),0,1000); //angle comes in 2 bytes, 0..1000 means -120..120
+	ang = clamp(map(ang, -120, 120, 0, 1000),0,1000); //angle comes in 2 bytes, 0..1000 means -120..120
 	angle = ang;
 	servo_write(
 		id,
@@ -85,7 +85,7 @@ void servo::move(int ang){
 void servo::move(){
 	servo_tx_enb();
 	int ang = angle;
-	ang = limit(map(ang, -120, 120, 0, 1000),0,1000);
+	ang = clamp(map(ang, -120, 120, 0, 1000),0,1000);
 	servo_write(
 		id,
 		SERVO_MOVE_TIME_WRITE,
