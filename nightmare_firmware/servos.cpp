@@ -1,6 +1,6 @@
 #include "servos.h"
 
-#define SERVO_HEADER            0x55,  0x55
+#define SERVO_HEADER byte(0x55), byte(0x55)
 #define SERVO_MOVE_TIME_WRITE       7,  1
 #define SERVO_MOVE_TIME_READ        3,  2
 #define SERVO_MOVE_TIME_WAIT_WRITE  7,  7
@@ -38,15 +38,21 @@ void servo::init(int _tx_enb, int _rx_enb){
 	pinMode(_rx_enb, OUTPUT);       //hardware rx enable pin
 }
 
-template<typename T>
-void servo_write(T t) {
-	Serial2.write(t);
+byte _write(byte b) {
+	Serial2.write(b);
+	return b;
 }
 
-template<typename T, typename... Args>
-void servo_write(T t, Args... args) {
-	servo_write(t);
-	servo_write(args...);
+template<typename... Args>
+byte _write(byte b, Args... args) {
+	return _write(b) + _write(args...);
+}
+
+template<typename... Args>
+void servo_write(Args... args) {
+	_write(SERVO_HEADER);
+	byte checksum = ~_write(byte(args)...);
+	_write(checksum);
 }
 
 void servo_tx_enb() {
@@ -65,13 +71,11 @@ void servo::move(int ang){
 	ang = limit(map(ang, -120, 120, 0, 1000),0,1000); //angle comes in 2 bytes, 0..1000 means -120..120
 	angle = ang;
 	servo_write(
-		SERVO_HEADER, 
-		id, 
-		SERVO_MOVE_TIME_WRITE, 
-		ang & 0xFF, 
-		ang >> 8, 
-		0x00, 0x00, 
-		~((byte)(id+0x08+(ang & 0xFF)+(ang >> 8)))
+		id,
+		SERVO_MOVE_TIME_WRITE,
+		ang & 0xFF,
+		ang >> 8,
+		0x00, 0x00
 	);
   
   	Serial2.flush(); //may cause slower write
@@ -83,13 +87,11 @@ void servo::move(){
 	int ang = angle;
 	ang = limit(map(ang, -120, 120, 0, 1000),0,1000);
 	servo_write(
-		SERVO_HEADER, 
-		id, 
-		SERVO_MOVE_TIME_WRITE, 
-		ang & 0xFF, 
-		ang >> 8, 
-		0x00, 0x00, 
-		~((byte)(id+0x08+(ang & 0xFF)+(ang >> 8)))
+		id,
+		SERVO_MOVE_TIME_WRITE,
+		ang & 0xFF,
+		ang >> 8,
+		0x00, 0x00
 	);
   
   	Serial2.flush(); //may cause slower write
@@ -100,11 +102,9 @@ void servo::attach(){
   	servo_tx_enb();
   
   	servo_write(
-		SERVO_HEADER,
 		id,
 		SERVO_LOAD_OR_UNLOAD_WRITE,
-		0x01,
-		~((byte)(id+0x24))
+		0x01
   	);
 	
 	active = true;
@@ -117,11 +117,9 @@ void servo::detach(){
   	servo_tx_enb();
   
   	servo_write(
-		SERVO_HEADER,
 		id,
 		SERVO_LOAD_OR_UNLOAD_WRITE,
-		0x00,
-		~((byte)(id+0x23))
+		0x00
   	);
 
 	active = false;
@@ -135,12 +133,7 @@ int servo::read(){
   	Serial2.flush();                 //wait for bus to clear
   	servo_tx_enb();                  //enable write mode
 
-  	servo_write(                     //request angle
-		SERVO_HEADER,
-		id,
-		SERVO_POS_READ,
-		~((byte)(id+0x1F))
-  	);
+  	servo_write(id, SERVO_POS_READ); //request angle
 
   	Serial2.flush();                 //wait the request for it being sent
   	servo_rx_enb();                  //enable listen mode
