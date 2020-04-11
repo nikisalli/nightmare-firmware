@@ -28,6 +28,7 @@ void setup(){
 		servo.id = ++x;
 	}
 
+	/* initialize tasks */
 	xTaskCreatePinnedToCore(servo_writer_task,    //task function
 							"servo writer task",  //task name
 							10000,                //task stack depth in bytes
@@ -38,7 +39,58 @@ void setup(){
 }
 
 void loop(){
-	
+	/* esp32 bound packet (ROS -> esp32):
+		>HEADER: (ten 0x55 bytes by default)
+		>SERVO ANGLES: an array of 27 angles, one byte each going from 0 to 240 meaning -120 to 120 
+					  the last angle (tilt of the head) is in range -90..90 because it is a standard servo
+					  and not a serial one
+		>SERVO ENABLES: 27 bytes containing 27 enable bits
+		>FAN SPEED: two bytes going from 0 to 255 indicating the onboard fan speed (0 to 100%)
+		>CHECKSUM: the first 8 bits of the sum of all the packet's bytes
+
+		total bytes: 10 (if header not changed) + 27 + 27 + 2 + 1 = 67 bytes
+		checksum bytes: 27 + 27 + 2 + 1 = 57 bytes
+	*/
+
+	/* search and wait for header */
+	uint8_t iters = 0;
+	while(iters < sizeof(HEADER)/sizeof(HEADER[0])){
+		if(Serial.available() > 0){
+			if(Serial.read() == HEADER[iters]){
+				iters++;
+			} else {
+				iters = 0;
+			}
+		}
+	}
+
+	/* read payload and checksum */
+	//Serial.setTimeout(100);
+	uint8_t buf[66] = {};  // read everything 
+	Serial.readBytes(buf, 66);
+	int checksum = Serial.read();
+
+	/* evaluate and compare checksum */
+	int _checksum = 0;
+	for(auto& x : buf){
+		_checksum += x;
+	}
+	if(!((uint8_t)_checksum == checksum)){
+		return; //start the loop again because the packet isn't valid
+	}
+
+	/* unpack the packet and fill angle buffers */
+	for(int i=0; i<26; i++){
+		servos[i].angle = buf[i] - 120;
+		if(buf[i+27] == 1){
+			servos[i].attach();
+		} else {
+			servos[i].detach();
+		}
+	}
+
+	//TODO set fan speed
+	//TODO send response packet
 }
 
 void servo_writer_task( void * parameter) { //task to write to servos while not reading

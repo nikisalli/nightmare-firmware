@@ -23,6 +23,10 @@
 //                                          LEG 3  |       || ||       |  LEG 4
 //                                                         |___|
 
+/* software defines */
+const uint8_t HEADER[] = {0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55};
+
+/* hardware defines */
 const int   FAN1_PIN = 21;
 const int   FAN2_PIN = 22;
 const int   SERVO_PIN_TX_ENB = GPIO_NUM_18;
