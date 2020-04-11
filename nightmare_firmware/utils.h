@@ -10,7 +10,7 @@
  * @param  out_max: higher out reference for interpolation
  * @retval value relative to out_min..out_max 
  */
-float fmap(float x, float in_min, float in_max, float out_min, float out_max);
+extern float fmap(float x, float in_min, float in_max, float out_min, float out_max);
 
 /**
  * @brief  clamp value to range
@@ -19,6 +19,6 @@ float fmap(float x, float in_min, float in_max, float out_min, float out_max);
  * @param  max: maximum value
  * @retval clamped value
  */
-float clamp(float val, float min, float max);
+extern float clamp(float val, float min, float max);
 
 #endif
