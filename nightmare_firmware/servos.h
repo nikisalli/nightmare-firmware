@@ -53,7 +53,7 @@ class servo{
          * @brief  function to read servo's position
          * @note   this function is blocking and will halt every write type communication to the servo
          *         until fineshed or timed out. The timeout is set to 5 seconds
-         * @retval returns servo's angle if the communication worked or INT_MAX if errors were found
+         * @retval returns servo's angle in degrees -180..180 if the communication worked or INT_MAX if errors were found
          */
         int read();
 };
