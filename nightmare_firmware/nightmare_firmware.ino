@@ -81,6 +81,7 @@ void write_packet(){
 	for(auto& servo : servos){
 		if(servo.active == false){
 			all_active = false;
+			break;
 		}
 	}
 	if(!hservo.attached()){
@@ -196,7 +197,7 @@ void read_packet(){
 	if(hservo.attached()){
 		hservo.write(buf[26]);
 	}
-	
+
 	//TODO set fan speed
 	//TODO send response packet
 }
