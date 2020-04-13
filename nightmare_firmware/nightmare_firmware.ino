@@ -24,7 +24,7 @@ void setup(){
   	digitalWrite(FAN2_PIN, LOW);
 
 	servo::init(SERVO_PIN_TX_ENB, SERVO_PIN_RX_ENB); //init servo circuitry
-	hservo.setPeriodHertz(50);
+	hservo.setPeriodHertz(SERVO_FREQ_HEAD_TILT);
 
 	int x = 0;
 	for(auto& servo : servos){  //assign ids 1..26; 1..24 for legs, 25 head, 26 tail
@@ -104,8 +104,8 @@ void write_packet(){
 		
 		// calculate checksum
 		int checksum = 0;
-		for(int i=0; i<17; i++){
-			checksum += buf[i];
+		for(auto& buf_byte : buf){
+			checksum += buf_byte;
 		}
 		
 		buf[17] = (uint8_t)checksum;
@@ -185,14 +185,18 @@ void read_packet(){
 		
 	}
 
+	//analog servos use a different method for attach and detach so we do that here
 	if(buf[53] == 1){
 		hservo.attach(SERVO_PIN_HEAD_TILT, SERVO_MIN_WIDTH_HEAD_TILT, SERVO_MAX_WIDTH_HEAD_TILT);
 	} else {
 		hservo.detach();
 	}
+
+	//if the servo is attached write the position to it
 	if(hservo.attached()){
 		hservo.write(buf[26]);
 	}
+	
 	//TODO set fan speed
 	//TODO send response packet
 }

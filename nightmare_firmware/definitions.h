@@ -34,6 +34,7 @@ const int   SERVO_PIN_RX_ENB = GPIO_NUM_19;
 const int   SERVO_PIN_HEAD_TILT = 12;
 const int   SERVO_MAX_WIDTH_HEAD_TILT = 2400; // microseconds
 const int   SERVO_MIN_WIDTH_HEAD_TILT = 400; // microseconds
+const int   SERVO_FREQ_HEAD_TILT = 50; //Hz
 const int   HC12_PIN_TX = 2;
 const int   HC12_PIN_RX = 15;
 const int   HC12_PIN_SET = 13;
