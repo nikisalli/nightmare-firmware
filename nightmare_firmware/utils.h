@@ -1,6 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <Arduino.h>
+
 /**
  * @brief  linear interpolation in_min:in_max=out_min:out_max
  * @param  x: value relative to in_min..in_max range

@@ -133,7 +133,7 @@ void write_packet(){
 		}
 		int checksum = 0;
 		for(int i=0; i<71; i++){ //packet length -1 because the last byte is the checksum
-			checksum += buf_byte;
+			checksum += buf[i];
 		}
 		buf[71] = (uint8_t)checksum;
 
