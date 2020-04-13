@@ -3,11 +3,13 @@
 #include "utils.h"
 #include <ESP32Servo.h>
 
-TaskHandle_t _servo_writer_task;      //task handle for writer task
-servo servos[26];                     //servo objects
+TaskHandle_t _servo_writer_task;        //task handle for writer task
+servo servos[26];                       //servo objects
 Servo hservo;
+lp_filter voltage_filter(1);		    //voltage filter object
+lp_filter current_filter(1);		    //current filter object
 
-bool servo::write_protection = false; //flag to stop task when reading servos
+bool servo::write_protection = false;   //flag to stop task when reading servos
 
 void setup(){
 	/* initialize hardware */
@@ -20,8 +22,11 @@ void setup(){
   	pinMode(DEBUG_LED_PIN_2, OUTPUT);
 
 
-  	digitalWrite(FAN1_PIN, HIGH);
+  	digitalWrite(FAN1_PIN, HIGH); //enable just one fan by default
   	digitalWrite(FAN2_PIN, LOW);
+
+	analogReadResolution(10); //set adc precision to 10 bits
+  	analogSetPinAttenuation(BATT_VOLTAGE_READ_PIN, ADC_0db); //set adc to full scale read
 
 	servo::init(SERVO_PIN_TX_ENB, SERVO_PIN_RX_ENB); //init servo circuitry
 	hservo.setPeriodHertz(SERVO_FREQ_HEAD_TILT);
@@ -59,10 +64,10 @@ void loop(){
 			
 		## FULL DATA PACKET ##
 
-			{HEADER + SERVO ANGLES + BATTERY VOLTAGE + BATTERY CURRENT + JOYSTICK POS + JOYSTICK STATE + CHECKSUM}
+			{HEADER + BATTERY VOLTAGE + BATTERY CURRENT + JOYSTICK POS + JOYSTICK STATE + SERVO ANGLES + CHECKSUM}
 
-			total bytes: 10 (if header not changed) + 54 + 1 + 1 + 4 + 1 + 1 = 72 bytes
-			checksum bytes: 54 + 1 + 1 + 4 + 1 + 1 = 62 bytes
+			total bytes: 10 (if header not changed) + 1 + 1 + 4 + 1 + 54 + 1= 72 bytes
+			checksum bytes: 1 + 1 + 4 + 1 + 54 + 1 = 62 bytes
 			
 		>HEADER -> (ten 0x55 bytes by default)
 		>ID -> 0 for basic data, 1 for full data
@@ -89,38 +94,52 @@ void write_packet(){
 	}
 
 	int header_size = sizeof(HEADER)/sizeof(HEADER[0]);
+	uint8_t buf[67] = {};
+
+	for(int i=0; i<header_size; i++){
+		buf[i] = HEADER[i];
+	}
+
+	voltage_filter.input = fmap(analogRead(BATT_VOLTAGE_READ_PIN), 0, 1023, 0, 12.2); //scale the value read to 12.2V
+	current_filter.input = ((analogRead(BATT_CURR_READ_PIN) * 0.0008625) - 2.49) * 10; //magic numbers to scale and offset the current data
+	
+	buf[10] = (byte)(fmap(voltage_filter.get_val(),0,9,0,255)); //battery voltage byte
+	buf[11] = (byte)(fmap(current_filter.get_val(),0,12.0,0,255)); //battery current byte
+	buf[12] = 0; //TODO joystick LX
+	buf[13] = 0; //TODO joystick LY
+	buf[14] = 0; //TODO joystick RX
+	buf[15] = 0; //TODO joystick RY
+	buf[16] = 0; //TODO joystick state
+
 	if(all_active){
 		// send basic data
-		uint8_t buf[18] = {};
-		for(int i=0; i<header_size; i++){
-			buf[i] = HEADER[i];
-		}
-		buf[10] = 0; //TODO battery voltage
-		buf[11] = 0; //TODO battery current
-		buf[12] = 0; //TODO joystick LX
-		buf[13] = 0; //TODO joystick LY
-		buf[14] = 0; //TODO joystick RX
-		buf[15] = 0; //TODO joystick RY
-		buf[16] = 0; //TODO joystick state
-		
 		// calculate checksum
 		int checksum = 0;
-		for(auto& buf_byte : buf){
-			checksum += buf_byte;
+		for(int i=0; i<17; i++){ //packet length -1 because the last byte is the checksum
+			checksum += buf[i];
 		}
-		
 		buf[17] = (uint8_t)checksum;
 
+		//write packet
+		for(int i=0; i<18; i++){
+			Serial.write(buf[i]);
+		}
 	} else {
 		// send all data and poll servo positions
-		uint8_t buf[67] = {};
-		for(int i=0; i<header_size; i++){
-			buf[i] = HEADER[i];
-		}
 		for(int i=0; i<27; i++){
 			int ang = servos[i].read();
-			buf[header_size + i*2] = (uint8_t)(ang >> 8);
-			buf[header_size + 1 + i*2 ] = (uint8_t)(ang & 0xFF);
+			buf[17 + i*2] = (uint8_t)(ang >> 8);
+			buf[18 + i*2 ] = (uint8_t)(ang & 0xFF);
+		}
+		int checksum = 0;
+		for(int i=0; i<71; i++){ //packet length -1 because the last byte is the checksum
+			checksum += buf_byte;
+		}
+		buf[71] = (uint8_t)checksum;
+
+		//write packet
+		for(int i=0; i<72; i++){
+			Serial.write(buf[i]);
 		}
 	}
 }
