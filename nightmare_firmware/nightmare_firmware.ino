@@ -3,7 +3,8 @@
 #include "utils.h"
 #include <ESP32Servo.h>
 
-TaskHandle_t _servo_writer_task;        //task handle for writer task
+TaskHandle_t _servo_writer_task;        //task handle for servo writer task
+TaskHandle_t _hc12_reader_task;        //task handle for hc12 reader task
 servo servos[26];                       //servo objects
 Servo hservo;
 lp_filter voltage_filter(1);		    //voltage filter object
@@ -63,6 +64,14 @@ void setup(){
 							NULL,                 //parameters
 							1,                    //priority 0..32, smaller = less
 							&_servo_writer_task,  //task handle
+							1);                   //core (0 or 1)
+
+	xTaskCreatePinnedToCore(hc12_reader_task,    //task function
+							"hc12 reader task",  //task name
+							10000,                //task stack depth in bytes
+							NULL,                 //parameters
+							1,                    //priority 0..32, smaller = less
+							&_hc12_reader_task,  //task handle
 							1);                   //core (0 or 1)
 }
 
@@ -125,11 +134,16 @@ void write_packet(){
 	
 	buf[10] = (byte)(fmap(voltage_filter.get_val(),0,9,0,255)); //battery voltage byte
 	buf[11] = (byte)(fmap(current_filter.get_val(),0,12.0,0,255)); //battery current byte
+
+	vTaskSuspend(_hc12_reader_task);
+
 	buf[12] = joystick_lx; 		//joystick LX byte
 	buf[13] = joystick_ly; 		//joystick LY byte
 	buf[14] = joystick_rx; 		//joystick RX byte
 	buf[15] = joystick_ry; 		//joystick RY byte
 	buf[16] = joystick_state; 	//joystick state byte
+	
+	vTaskResume(_hc12_reader_task);
 
 	if(all_active){
 		// send basic data
