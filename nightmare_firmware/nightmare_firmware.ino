@@ -123,7 +123,7 @@ void write_packet(){
 	}
 
 	int ROS_HEADER_size = sizeof(ROS_HEADER)/sizeof(ROS_HEADER[0]);
-	uint8_t buf[67] = {};
+	uint8_t buf[72] = {};
 
 	for(int i=0; i<ROS_HEADER_size; i++){
 		buf[i] = ROS_HEADER[i];
@@ -142,7 +142,7 @@ void write_packet(){
 	buf[14] = joystick_rx; 		//joystick RX byte
 	buf[15] = joystick_ry; 		//joystick RY byte
 	buf[16] = joystick_state; 	//joystick state byte
-	
+
 	vTaskResume(_hc12_reader_task);
 
 	if(all_active){
@@ -252,6 +252,67 @@ void read_packet(){
 	//TODO send response packet
 }
 
+void hc12_write_packet(){
+	/* write to hc12 */
+	int HC12_HEADER_size = sizeof(HC12_HEADER)/sizeof(HC12_HEADER[0]);
+	uint8_t buf[5] = {};
+
+	for(int i=0; i<HC12_HEADER_size; i++){
+		buf[i] = HC12_HEADER[i];
+	}
+
+	voltage_filter.input = fmap(analogRead(BATT_VOLTAGE_READ_PIN), 0, 1023, 0, 12.2); //scale the value read to 12.2V
+	current_filter.input = ((analogRead(BATT_CURR_READ_PIN) * 0.0008625) - 2.49) * 10; //magic numbers to scale and offset the current data
+	
+	buf[2] = (byte)(fmap(voltage_filter.get_val(),0,9,0,255)); //battery voltage byte
+	buf[3] = (byte)(fmap(current_filter.get_val(),0,12.0,0,255)); //battery current byte
+
+	// calculate checksum
+	int checksum = 0;
+	for(int i=0; i<4; i++){ //packet length -1 because the last byte is the checksum
+		checksum += buf[i];
+	}
+	buf[4] = (uint8_t)checksum;
+
+	//write packet
+	for(int i=0; i<5; i++){
+		Serial1.write(buf[i]);
+	}
+}
+
+void hc12_read_packet(){
+	/* read from hc12 */
+	uint8_t iters = 0;
+	while(iters < sizeof(HC12_HEADER)/sizeof(HC12_HEADER[0])){
+		if(Serial1.available() > 0){
+			if(Serial1.read() == HC12_HEADER[iters]){
+				iters++;
+			} else {
+				iters = 0;
+			}
+		}
+	}
+
+	uint8_t buf[5] = {};  // read everything 
+	Serial1.readBytes(buf, 5);
+	int checksum = Serial1.read();
+
+	/* evaluate and compare checksum */
+	int _checksum = 0;
+	for(auto& x : buf){
+		_checksum += x;
+	}
+
+	/* update values */
+	if((uint8_t)_checksum == checksum){ // update values only if the checksum is valid
+		joystick_lx = buf[0]; //these are in range 0..255
+		joystick_ly = buf[1];
+		joystick_rx = buf[2];
+		joystick_ry = buf[3];
+		joystick_state = buf[4];
+	}
+}
+
 void servo_writer_task( void * parameter){ //task to write to servos while not reading
 	while(1){
 		for(auto& servo : servos){
@@ -264,34 +325,7 @@ void servo_writer_task( void * parameter){ //task to write to servos while not r
 
 void hc12_reader_task( void * parameter ){
 	while(1){
-		uint8_t iters = 0;
-		while(iters < sizeof(HC12_HEADER)/sizeof(HC12_HEADER[0])){
-			if(Serial1.available() > 0){
-				if(Serial1.read() == HC12_HEADER[iters]){
-					iters++;
-				} else {
-					iters = 0;
-				}
-			}
-		}
-
-		uint8_t buf[5] = {};  // read everything 
-		Serial.readBytes(buf, 5);
-		int checksum = Serial.read();
-
-		/* evaluate and compare checksum */
-		int _checksum = 0;
-		for(auto& x : buf){
-			_checksum += x;
-		}
-
-		/* update values */
-		if((uint8_t)_checksum == checksum){ // update values only if the checksum is valid
-			joystick_lx = buf[0]; //these are in range 0..255
-			joystick_ly = buf[1];
-			joystick_rx = buf[2];
-			joystick_ry = buf[3];
-			joystick_state = buf[4];
-		}
+		hc12_read_packet();
+		hc12_write_packet();
 	}
 }
