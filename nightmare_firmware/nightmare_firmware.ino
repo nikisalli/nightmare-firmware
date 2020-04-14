@@ -11,10 +11,31 @@ lp_filter current_filter(1);		    //current filter object
 
 bool servo::write_protection = false;   //flag to stop task when reading servos
 
+int joystick_lx = 0; //variables going from -127 to 127 
+int joystick_ly = 0;
+int joystick_rx = 0;
+int joystick_ry = 0;
+uint8_t joystick_state;
+
+/*     	   LX+                   RX+
+		+-------+             +-------+
+		|       |             |       |
+	LY+ |   O   | LY-     RY+ |   O   | RY-
+		|       |             |       |
+		+-------+             +-------+
+		   LX-                   RX-       
+*/
+
 void setup(){
 	/* initialize hardware */
 	Serial.begin(460800);               //ROS serial port
+	Serial1.begin(9600);				//hc12 Serial port
+	Serial2.begin(115200);          	//servo Serial port
 
+	Serial2.setRxBufferSize(1024);  	//make sure the servo buffer doesn't overflow
+  
+	pinMode(SERVO_PIN_TX_ENB, OUTPUT);  //hardware tx enable pin
+	pinMode(SERVO_PIN_RX_ENB, OUTPUT);  //hardware rx enable pin
 	pinMode(PANDA_POWER_PIN,OUTPUT);    //lattepanda power on gpio
 	pinMode(FAN1_PIN, OUTPUT);          //fans
   	pinMode(FAN2_PIN, OUTPUT);
@@ -22,13 +43,12 @@ void setup(){
   	pinMode(DEBUG_LED_PIN_2, OUTPUT);
 
 
-  	digitalWrite(FAN1_PIN, HIGH); //enable just one fan by default
+  	digitalWrite(FAN1_PIN, HIGH); 		//enable just one fan by default
   	digitalWrite(FAN2_PIN, LOW);
 
-	analogReadResolution(10); //set adc precision to 10 bits
+	analogReadResolution(10); 			//set adc precision to 10 bits
   	analogSetPinAttenuation(BATT_VOLTAGE_READ_PIN, ADC_0db); //set adc to full scale read
 
-	servo::init(SERVO_PIN_TX_ENB, SERVO_PIN_RX_ENB); //init servo circuitry
 	hservo.setPeriodHertz(SERVO_FREQ_HEAD_TILT);
 
 	int x = 0;
@@ -57,19 +77,19 @@ void loop(){
  * 
 		## BASIC DATA PACKET ##
 
-			{HEADER + BATTERY VOLTAGE + BATTERY CURRENT + JOYSTICK POS + JOYSTICK STATE + CHECKSUM}
+			{ROS_HEADER + BATTERY VOLTAGE + BATTERY CURRENT + JOYSTICK POS + JOYSTICK STATE + CHECKSUM}
 
-			total bytes: 10 (if header not changed) + 1 + 1 + 4 + 1 + 1 = 18 bytes
+			total bytes: 10 (if ROS_HEADER not changed) + 1 + 1 + 4 + 1 + 1 = 18 bytes
 			checksum bytes: 1 + 1 + 4 + 1 + 1 = 8 bytes
 			
 		## FULL DATA PACKET ##
 
-			{HEADER + BATTERY VOLTAGE + BATTERY CURRENT + JOYSTICK POS + JOYSTICK STATE + SERVO ANGLES + CHECKSUM}
+			{ROS_HEADER + BATTERY VOLTAGE + BATTERY CURRENT + JOYSTICK POS + JOYSTICK STATE + SERVO ANGLES + CHECKSUM}
 
-			total bytes: 10 (if header not changed) + 1 + 1 + 4 + 1 + 54 + 1= 72 bytes
+			total bytes: 10 (if ROS_HEADER not changed) + 1 + 1 + 4 + 1 + 54 + 1= 72 bytes
 			checksum bytes: 1 + 1 + 4 + 1 + 54 + 1 = 62 bytes
 			
-		>HEADER -> (ten 0x55 bytes by default)
+		>ROS_HEADER -> (ten 0x55 bytes by default)
 		>ID -> 0 for basic data, 1 for full data
 		>SERVO ANGLES ->  an array of 27 angles, two bytes each going from 0 to 1500 meaning -180 to 180 
 					  	the last angle (tilt of the head) is in range -90..90 because it is a standard servo
@@ -93,11 +113,11 @@ void write_packet(){
 		all_active = false;
 	}
 
-	int header_size = sizeof(HEADER)/sizeof(HEADER[0]);
+	int ROS_HEADER_size = sizeof(ROS_HEADER)/sizeof(ROS_HEADER[0]);
 	uint8_t buf[67] = {};
 
-	for(int i=0; i<header_size; i++){
-		buf[i] = HEADER[i];
+	for(int i=0; i<ROS_HEADER_size; i++){
+		buf[i] = ROS_HEADER[i];
 	}
 
 	voltage_filter.input = fmap(analogRead(BATT_VOLTAGE_READ_PIN), 0, 1023, 0, 12.2); //scale the value read to 12.2V
@@ -105,11 +125,11 @@ void write_packet(){
 	
 	buf[10] = (byte)(fmap(voltage_filter.get_val(),0,9,0,255)); //battery voltage byte
 	buf[11] = (byte)(fmap(current_filter.get_val(),0,12.0,0,255)); //battery current byte
-	buf[12] = 0; //TODO joystick LX
-	buf[13] = 0; //TODO joystick LY
-	buf[14] = 0; //TODO joystick RX
-	buf[15] = 0; //TODO joystick RY
-	buf[16] = 0; //TODO joystick state
+	buf[12] = joystick_lx; 		//joystick LX byte
+	buf[13] = joystick_ly; 		//joystick LY byte
+	buf[14] = joystick_rx; 		//joystick RX byte
+	buf[15] = joystick_ry; 		//joystick RY byte
+	buf[16] = joystick_state; 	//joystick state byte
 
 	if(all_active){
 		// send basic data
@@ -150,12 +170,12 @@ void write_packet(){
 		
 		## PACKET ##
 
-			{HEADER + SERVO ANGLES + SERVO ENABLES + FAN SPEED + CHECKSUM}
+			{ROS_HEADER + SERVO ANGLES + SERVO ENABLES + FAN SPEED + CHECKSUM}
 
-			total bytes -> 10 (if header not changed) + 27 + 27 + 2 + 1 = 67 bytes
+			total bytes -> 10 (if ROS_HEADER not changed) + 27 + 27 + 2 + 1 = 67 bytes
 			checksum bytes -> 27 + 27 + 2 + 1 = 57 bytes
 
-		>HEADER -> (ten 0x55 bytes by default)
+		>ROS_HEADER -> (ten 0x55 bytes by default)
 		>SERVO ANGLES -> an array of 27 angles, one byte each going from 0 to 240 meaning -120 to 120 
 					  the last angle (tilt of the head) is in range -90..90 because it is a standard servo
 					  and not a serial one
@@ -164,14 +184,11 @@ void write_packet(){
 		>CHECKSUM -> the first 8 bits of the sum of all the packet's bytes
  */
 void read_packet(){
-	/* 
-	*/
-
-	/* search and wait for header */
+	/* search and wait for ROS_HEADER */
 	uint8_t iters = 0;
-	while(iters < sizeof(HEADER)/sizeof(HEADER[0])){
+	while(iters < sizeof(ROS_HEADER)/sizeof(ROS_HEADER[0])){
 		if(Serial.available() > 0){
-			if(Serial.read() == HEADER[iters]){
+			if(Serial.read() == ROS_HEADER[iters]){
 				iters++;
 			} else {
 				iters = 0;
@@ -221,12 +238,46 @@ void read_packet(){
 	//TODO send response packet
 }
 
-void servo_writer_task( void * parameter) { //task to write to servos while not reading
-	while(1) {
+void servo_writer_task( void * parameter){ //task to write to servos while not reading
+	while(1){
 		for(auto& servo : servos){
 			if (servo.active && !servo::write_protection){
 				servo.move(); //move to pos set in servo::pos
 			}
+		}
+	}
+}
+
+void hc12_reader_task( void * parameter ){
+	while(1){
+		uint8_t iters = 0;
+		while(iters < sizeof(HC12_HEADER)/sizeof(HC12_HEADER[0])){
+			if(Serial1.available() > 0){
+				if(Serial1.read() == HC12_HEADER[iters]){
+					iters++;
+				} else {
+					iters = 0;
+				}
+			}
+		}
+
+		uint8_t buf[5] = {};  // read everything 
+		Serial.readBytes(buf, 5);
+		int checksum = Serial.read();
+
+		/* evaluate and compare checksum */
+		int _checksum = 0;
+		for(auto& x : buf){
+			_checksum += x;
+		}
+
+		/* update values */
+		if((uint8_t)_checksum == checksum){ // update values only if the checksum is valid
+			joystick_lx = buf[0]; //these are in range 0..255
+			joystick_ly = buf[1];
+			joystick_rx = buf[2];
+			joystick_ry = buf[3];
+			joystick_state = buf[4];
 		}
 	}
 }

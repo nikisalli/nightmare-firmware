@@ -1,5 +1,5 @@
-#ifndef N_SERVOS_H
-#define N_SERVOS_H
+#ifndef SERVOS_H
+#define SERVOS_H
 
 #include "utils.h"
 #include "Arduino.h"
@@ -12,16 +12,8 @@
 class servo{
     public:
         /* static objects */
-
-        /**
-         * @brief  static method to set bus control GPIOs
-         * @param  _tx_enb: GPIO used to set bus on write mode (servoBound)
-         * @param  _rx_enb: GPIO used to set bus on read mode (controllerBound)
-         */
-        static void init(int _tx_enb, int _rx_enb);
         static bool write_protection;
-
-
+        
 
         /* dynamic objects */
         uint8_t id;             //servo id 1..26

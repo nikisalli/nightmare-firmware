@@ -30,14 +30,6 @@
 #define SERVO_LED_ERROR_WRITE       4, 35
 #define SERVO_LED_ERROR_READ        3, 36
 
-void servo::init(int _tx_enb, int _rx_enb){
-	Serial2.begin(115200);          //initialize servo serial
-	Serial2.setRxBufferSize(1024);  //make sure the buffer doesn't overflow
-  
-	pinMode(_tx_enb, OUTPUT);       //hardware tx enable pin
-	pinMode(_rx_enb, OUTPUT);       //hardware rx enable pin
-}
-
 byte _write(byte b) {
 	Serial2.write(b);
 	return b;
