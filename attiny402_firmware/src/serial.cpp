@@ -60,7 +60,7 @@ void handler::write_id(){
         id,
         SENSOR_ID_READ_LENGTH,
         SENSOR_ID_READ,
-		eeprom_read_byte((uint8_t*)EEPROM_ID_ADDR)
+        eeprom_read_byte((uint8_t*)EEPROM_ID_ADDR)
 	);
   
   	Serial.flush(); //may cause slower write
