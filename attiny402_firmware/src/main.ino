@@ -1,7 +1,5 @@
 #include "serial.h"
 
-handler ser;
-
 int main(){
     init();
 
@@ -10,8 +8,8 @@ int main(){
     pinMode(A3, OUTPUT);    
     digitalWrite(A3, LOW);
     pinMode(A2, INPUT);
-
-    ser = handler();
+    
+    handler ser;
 
     while(true){
         ser.handle();
