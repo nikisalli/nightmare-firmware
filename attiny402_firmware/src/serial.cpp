@@ -89,7 +89,7 @@ void handler::handle(){
 
     delayMicroseconds(500);
 
-    if(~sum != buf[length - 1]) return;     //match checksum
+    //if(~sum != buf[length - 1]) return;     //match checksum
     
     switch(cmd){
         case SENSOR_PRESSURE_READ:
