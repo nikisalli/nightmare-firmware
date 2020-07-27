@@ -45,7 +45,7 @@ handler::handler(){
 
 void handler::write_pressure(uint16_t pressure){
 	servo_write(
-		id,
+        id,
         SENSOR_PRESSURE_READ_LENGTH,
 		SENSOR_PRESSURE_READ,
 		pressure & 0xFF,
@@ -57,9 +57,9 @@ void handler::write_pressure(uint16_t pressure){
 
 void handler::write_id(){
     servo_write(
-		id,
+        id,
         SENSOR_ID_READ_LENGTH,
-		SENSOR_ID_READ,
+        SENSOR_ID_READ,
 		eeprom_read_byte((uint8_t*)EEPROM_ID_ADDR)
 	);
   
