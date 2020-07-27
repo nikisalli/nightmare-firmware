@@ -2,15 +2,19 @@
 
 handler ser;
 
-void setup() {
-    Serial.begin(115200);
-    pinMode(A3, OUTPUT);
+int main(){
+    init();
+
+    Serial.begin(115200);   //serial initialization
+
+    pinMode(A3, OUTPUT);    
     digitalWrite(A3, LOW);
     pinMode(A2, INPUT);
 
     ser = handler();
-}
 
-void loop() {
-    ser.handle();
+    while(true){
+        ser.handle();
+    }
+    return 0;
 }
