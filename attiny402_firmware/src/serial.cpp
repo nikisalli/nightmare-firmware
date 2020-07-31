@@ -30,10 +30,6 @@ void sensor_rx_enb() {
 	PORTA.OUT &= ~PIN3_bm;
 }
 
-/*handler::handler(){
-    //led_init();
-}*/
-
 void handler::write_pressure(uint16_t pressure){
 	servo_write(
         id,
