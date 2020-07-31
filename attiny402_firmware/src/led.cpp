@@ -17,9 +17,6 @@ ISR(TCA0_CMP0_vect) {
             if(a_rgb[rgb_cycle_state] > 253) rgb_cycle_state++;
             if(rgb_cycle_state > 2) rgb_cycle_state = 0;
             set_led_color(a_rgb[0], a_rgb[1], a_rgb[2]);
-        case 2:
-
-            break;
     }
 }
 
