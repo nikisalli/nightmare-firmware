@@ -1,6 +1,8 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
+#include "led.h"
+
 #include <avr/io.h>
 #include <avr/eeprom.h> 
 #include <Arduino.h>
@@ -28,9 +30,7 @@
 class handler{
     public:
         uint8_t id = DEFAULT_SENSOR_ID;
-        uint8_t led_mode = 0;
 
-        handler();
         void handle();
         void write_pressure(uint16_t pressure);
         void write_id();

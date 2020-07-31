@@ -1,8 +1,6 @@
 #include "serial.h"
-#include <WS2812.h>
 
-WS2812 LED(1);
-cRGB val;
+uint8_t led_mode = 0;
 
 uint8_t _write(uint8_t b) {
 	Serial.write(b);
@@ -32,16 +30,9 @@ void sensor_rx_enb() {
 	PORTA.OUT &= ~PIN3_bm;
 }
 
-handler::handler(){
-    LED.setOutput(A1); // Digital Pin PA1
-
-    val.r = 0;
-    val.g = 0;
-    val.b = 0;
-
-    LED.set_crgb_at(0, val);  // Set value at LED found at index 0
-    LED.sync();  
-}
+/*handler::handler(){
+    //led_init();
+}*/
 
 void handler::write_pressure(uint16_t pressure){
 	servo_write(
@@ -110,20 +101,15 @@ void handler::handle(){
             case SENSOR_LED_RGB_WRITE:
                 if(led_mode != 0) return;   //only change color if the LED is in direct control mode (0)
 
-                val.r = buf[0];
-                val.g = buf[1];
-                val.b = buf[2];
-
-                LED.set_crgb_at(0, val);    // Set value at LED found at index 0
-                LED.sync();  
+                set_led_color(buf[0], buf[1], buf[2]);
                 break;
 
             case SENSOR_LED_MODE_WRITE:
                 led_mode = buf[0];
+                if(led_mode == 0) set_led_color(0,0,0);
                 break;
         }
     } else if(_id == 0xFE && cmd == SENSOR_ID_READ) {
         write_id();
-    }
-    
+    }   
 }

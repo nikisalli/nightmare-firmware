@@ -1,4 +1,5 @@
 #include "serial.h"
+#include "led.h"
 
 int main(){
     init();
@@ -9,10 +10,15 @@ int main(){
     digitalWrite(A3, LOW);
     pinMode(A2, INPUT);
     
-    handler ser;
+    handler ser;    //initialize deserializer
+
+    led_init();     //initialize led
+    TCA0_init();    //initialize timer interrupt
+
+    sei();
 
     while(true){
-        ser.handle();
+        ser.handle();   //handle incoming data
     }
     return 0;
 }
