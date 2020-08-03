@@ -12,7 +12,12 @@
 #define TIM0_MS_FACTOR  ( (F_CPU) / (1000 * TIM0_PRESCALER) )
 #define TIM0_COMP_VAL   (TIM0_MS * TIM0_MS_FACTOR)
 
-extern uint8_t led_mode;
+enum class LedMode: uint8_t {
+    MANUAL = 0,
+    RGB = 1
+};
+
+extern LedMode led_mode;
 
 void TCA0_init (void);
 void set_led_color(uint8_t r, uint8_t g, uint8_t b);
