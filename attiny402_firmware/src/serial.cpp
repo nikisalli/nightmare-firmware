@@ -1,7 +1,5 @@
 #include "serial.h"
 
-uint8_t led_mode = 0;
-
 uint8_t _write(uint8_t b) {
 	Serial.write(b);
 	return b;
@@ -95,15 +93,15 @@ void handler::handle(){
                 break;*/
                 
             case SENSOR_LED_RGB_WRITE:
-                if(led_mode != 0) return;   //only change color if the LED is in direct control mode (0)
+                if(led_mode != LedMode::MANUAL) return;   //only change color if the LED is in direct control mode (0)
 
                 set_led_color(buf[0], buf[1], buf[2]);
                 break;
 
             case SENSOR_LED_MODE_WRITE:
-                led_mode = buf[0];
-                if(led_mode == 0) set_led_color(0,0,0);
-                break;
+                led_mode = static_cast<LedMode>(buf[0]);
+                if(led_mode == LedMode::MANUAL) set_led_color(0,0,0);
+                break;  
         }
     } else if(_id == 0xFE && cmd == SENSOR_ID_READ) {
         write_id();

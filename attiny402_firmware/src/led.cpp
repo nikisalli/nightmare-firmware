@@ -5,18 +5,21 @@ cRGB val;                       //used for global color changes
 uint8_t a_rgb[3] = {0,0,255};   //used for automatic color changes
 uint8_t rgb_cycle_state = 0;    //used to keep track of the colors being changed in the rgb cycler
 
+LedMode led_mode = LedMode::MANUAL;
+
 ISR(TCA0_CMP0_vect) {
     TCA0.SINGLE.INTFLAGS = TCA_SINGLE_CMP0_bm;          //clear interrupt flag
 
     switch(led_mode){
-        case 0:
+        case LedMode::MANUAL:
             return;                                     //in led_mode 0 just return so you can set the color externally
-        case 1:
+        case LedMode::RGB:
             a_rgb[rgb_cycle_state]+=2;                  //no questions. this cycles smoothly through rgb colors and it just works
             a_rgb[(rgb_cycle_state+1) % 3]-=2;
             if(a_rgb[rgb_cycle_state] > 253) rgb_cycle_state++;
             if(rgb_cycle_state > 2) rgb_cycle_state = 0;
             set_led_color(a_rgb[0], a_rgb[1], a_rgb[2]);
+            break;
     }
 }
 
