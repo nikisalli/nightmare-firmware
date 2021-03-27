@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 const uint8_t FT4232_RESET_PIN = 12;
 
 void setup(){

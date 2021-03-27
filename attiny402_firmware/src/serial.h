@@ -10,7 +10,7 @@
 #define SENSOR_HEADER                   uint8_t(0x55), uint8_t(0x55)
 
 #define SENSOR_BROADCAST_ID             254
-#define DEFAULT_SENSOR_ID               1
+#define DEFAULT_SENSOR_ID               40
 
 #define SENSOR_PRESSURE_READ            37
 #define SENSOR_PRESSURE_READ_LENGTH     3
