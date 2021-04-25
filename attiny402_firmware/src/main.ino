@@ -4,8 +4,8 @@
 int main(){
     init();
 
-    Serial.begin(115200);   //serial initialization
-    
+    Serial.begin(93000);   //serial initialization
+
     pinMode(A3, OUTPUT);    
     digitalWrite(A3, LOW);
     pinMode(A2, INPUT);
@@ -13,7 +13,7 @@ int main(){
     handler ser;    //initialize deserializer
 
     led_init();     //initialize led
-    TCA0_init();    //initialize timer interrupt
+    // TCA0_init();    //initialize timer interrupt
 
     sei();          //enable global interrupts
 
