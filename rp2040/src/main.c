@@ -1,31 +1,38 @@
 #include <usb-serial.h>
-#include <gy953.h>
-
-gy953 mag = {
-    .cs_pin = 17,
-    .int_pin = 15,
-    .sck_pin = 18,
-    .mosi_pin = 19,
-    .miso_pin = 16,
-};
+#include <sensors.h>
 
 int main (void) {
     usb_serial_init ();
-    gy953_init(&mag);
+    sensors_init();
 
-    int data[3];
-    char buf[100];
+    char buf[200];
+    
+    sensor_data sd;
 
-    uint32_t val = 0;
     while (1) {
-        val++;
         usb_serial_update ();
-        if(val % 2000 == 0){
-            if (gy953_update(&mag, 0)) {
-                gy953_getRPY(&mag, data);
-                sprintf(buf, "R: %d P: %d Y: %d\n", data[0], data[1], data[2]);
-                usb_com_print(buf);
-            }
+        while (usb_com_available()) {
+            usb_com_read();
+        }
+        if (sensors_update()) {
+            sensors_read(&sd);
+            sprintf(buf, "R: %f P: %f Y: %f uart_pos: %ld usb_pos %ld vol: %f cur: %f pow: %f temp: %f lcdata: %ld %ld %ld %ld %ld %ld\n", 
+                sd.roll, 
+                sd.pitch, 
+                sd.yaw,
+                usb_com_uart_buff_index(),
+                usb_com_usb_buff_index(),
+                sd.battery_voltage, 
+                sd.battery_current,
+                sd.battery_power,
+                sd.rp2040_temperature, 
+                sd.load_cells_raw[0], 
+                sd.load_cells_raw[1], 
+                sd.load_cells_raw[2], 
+                sd.load_cells_raw[3], 
+                sd.load_cells_raw[4], 
+                sd.load_cells_raw[5]);
+            usb_com_print(buf);
         }
     }
 }

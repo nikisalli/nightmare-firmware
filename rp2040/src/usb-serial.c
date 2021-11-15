@@ -9,33 +9,6 @@
 #define MIN(a, b) ((a > b) ? b : a)
 #endif /* MIN */
 
-#define LED_PIN 25
-
-#define BUFFER_SIZE 2560
-
-#define DEF_BIT_RATE 115200
-#define DEF_STOP_BITS 1
-#define DEF_PARITY 0
-#define DEF_DATA_BITS 8
-
-typedef struct {
-	uart_inst_t *const inst;
-	uint8_t tx_pin;
-	uint8_t rx_pin;
-} uart_id_t;
-
-typedef struct {
-	cdc_line_coding_t usb_lc;
-	cdc_line_coding_t uart_lc;
-	mutex_t lc_mtx;
-	uint8_t uart_buffer[BUFFER_SIZE];
-	uint32_t uart_pos;
-	mutex_t uart_mtx;
-	uint8_t usb_buffer[BUFFER_SIZE];
-	uint32_t usb_pos;
-	mutex_t usb_mtx;
-} uart_data_t;
-
 const uart_id_t UART_ID[CFG_TUD_CDC] = {
 	{
 		.inst = uart0,
@@ -161,6 +134,7 @@ void usb_write_bytes(uint8_t itf) {
 		mutex_enter_blocking(&ud->uart_mtx);
 
 		count = tud_cdc_n_write(itf, ud->uart_buffer, ud->uart_pos);
+		tud_cdc_n_write_flush(itf);
 		if (count < ud->uart_pos)
 			memcpy(ud->uart_buffer, &ud->uart_buffer[count],
 			       ud->uart_pos - count);
@@ -168,8 +142,8 @@ void usb_write_bytes(uint8_t itf) {
 
 		mutex_exit(&ud->uart_mtx);
 
-		if (count)
-			tud_cdc_n_write_flush(itf);
+		// if (count)
+			// tud_cdc_n_write_flush(itf);
 	}
 }
 
@@ -261,6 +235,13 @@ uint8_t usb_com_read(){
 	}
 }
 
+bool usb_com_available(){
+	if (tud_cdc_n_connected(2)){
+		uart_data_t *ud = &UART_DATA[2];
+		return ud->usb_pos > 0;
+	}
+}
+
 void usb_com_write(uint8_t* buf, uint32_t len){
 	if (tud_cdc_n_connected(2)){
 		uart_data_t *ud = &UART_DATA[2];
@@ -299,6 +280,16 @@ void usb_com_print(char* buf){
 
 		mutex_exit(&ud->uart_mtx);
 	}
+}
+
+uint32_t usb_com_usb_buff_index(){
+	uart_data_t *ud = &UART_DATA[2];
+	return ud->usb_pos;
+}
+
+uint32_t usb_com_uart_buff_index(){
+	uart_data_t *ud = &UART_DATA[2];
+	return ud->uart_pos;
 }
 
 void init_uart_data(uint8_t itf) {

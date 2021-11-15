@@ -28,9 +28,9 @@
 #define USBD_CDC_1_EP_CMD 0x83
 #define USBD_CDC_2_EP_CMD 0x85
 
-#define USBD_CDC_0_EP_OUT 0x01
-#define USBD_CDC_1_EP_OUT 0x03
-#define USBD_CDC_2_EP_OUT 0x05
+#define USBD_CDC_0_EP_OUT 0x02
+#define USBD_CDC_1_EP_OUT 0x04
+#define USBD_CDC_2_EP_OUT 0x06
 
 #define USBD_CDC_0_EP_IN 0x82
 #define USBD_CDC_1_EP_IN 0x84
