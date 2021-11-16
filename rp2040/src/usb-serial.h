@@ -10,8 +10,9 @@
 #include <tusb.h>
 
 #define LED_PIN 25
+#define LED1_PIN 24
 
-#define BUFFER_SIZE 2560
+#define BUFFER_SIZE 1024
 
 #define DEF_BIT_RATE 115200
 #define DEF_STOP_BITS 1

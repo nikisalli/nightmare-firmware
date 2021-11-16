@@ -10,6 +10,7 @@
 
 #include <tusb_option.h>
 
+#define CFG_TUD_CDC_EP_BUFSIZE 256
 #define CFG_TUD_EP_MAX 16
 #define CFG_TUSB_RHPORT0_MODE OPT_MODE_DEVICE
 

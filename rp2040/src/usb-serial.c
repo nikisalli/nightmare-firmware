@@ -135,9 +135,9 @@ void usb_write_bytes(uint8_t itf) {
 
 		count = tud_cdc_n_write(itf, ud->uart_buffer, ud->uart_pos);
 		tud_cdc_n_write_flush(itf);
-		if (count < ud->uart_pos)
-			memcpy(ud->uart_buffer, &ud->uart_buffer[count],
-			       ud->uart_pos - count);
+		for (uint32_t i = 0; i < ud->uart_pos - count; i++){
+			ud->uart_buffer[i] = ud->uart_buffer[i + count];
+		}
 		ud->uart_pos -= count;
 
 		mutex_exit(&ud->uart_mtx);
@@ -168,15 +168,17 @@ void core1_entry(void)
 		int con = 0;
 
 		tud_task();
-	
+
+		gpio_put(LED_PIN, 1);
 		for (itf = 0; itf < CFG_TUD_CDC; itf++) {
 			if (tud_cdc_n_connected(itf)) {
 				con = 1;
 				usb_cdc_process(itf);
 			}
 		}
+		gpio_put(LED_PIN, 0);
 
-		gpio_put(LED_PIN, con);
+		// gpio_put(LED_PIN, con);
 	}
 }
 
@@ -233,6 +235,7 @@ uint8_t usb_com_read(){
 
 		return val;
 	}
+	return 0;
 }
 
 bool usb_com_available(){
@@ -240,6 +243,7 @@ bool usb_com_available(){
 		uart_data_t *ud = &UART_DATA[2];
 		return ud->usb_pos > 0;
 	}
+	return 0;
 }
 
 void usb_com_write(uint8_t* buf, uint32_t len){
@@ -340,6 +344,8 @@ void usb_serial_init(void)
 	
 	gpio_init(LED_PIN);
 	gpio_set_dir(LED_PIN, GPIO_OUT);
+	gpio_init(LED1_PIN);
+	gpio_set_dir(LED1_PIN, GPIO_OUT);
 
 	multicore_launch_core1(core1_entry);
 }

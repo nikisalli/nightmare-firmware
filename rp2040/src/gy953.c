@@ -7,8 +7,8 @@ static uint8_t _gyBuffer[41] = {0};
 
 void gy953_init(gy953* s)
 {
-	memset(s->_rpy, 0, sizeof(uint8_t) * 3);
-	memset(s->_raw, 0, sizeof(uint8_t) * 4);
+	memset(s->_rpy, 0, sizeof(s->_rpy[0]) * 3);
+	memset(s->_raw, 0, sizeof(s->_rpy[0]) * 4);
 
 	// pinMode(_CS,OUTPUT);
 	gpio_init(s->cs_pin);
@@ -115,6 +115,7 @@ bool gy953_update(gy953* s, uint8_t mode)
 	uint8_t sum = 0;
 	if (_attention){
 		//TODO:disable other INT here
+		uint32_t interrupt_status = save_and_disable_interrupts();
 		gy953_readRegister(s, _GY953_INTREG, _gyBuffer, 41);//fill buffer
 		gy953_setMode(s, mode);
 		if (_gyBuffer[34] == 0x0D){
@@ -152,6 +153,7 @@ bool gy953_update(gy953* s, uint8_t mode)
 			}
 		}
 		_attention = false;
+		restore_interrupts(interrupt_status);
 		//TODO:enable other INT here
 		return 1;
 	} else {
