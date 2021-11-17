@@ -175,9 +175,9 @@ void core1_entry(void) {
 			if (tud_cdc_n_connected(itf)) {
 				usb_read_bytes(itf);
 				usb_write_bytes(itf);
+				uart_read_bytes(itf);
+				uart_write_bytes(itf);
 			}
-			uart_read_bytes(itf);
-			uart_write_bytes(itf);
 		}
 		gpio_put(LED_PIN, 0);
 	}

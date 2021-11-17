@@ -29,4 +29,6 @@ void sensors_init();
 void sensors_read(sensor_data* data);
 bool sensors_update();
 
+uint32_t get_time_ms();
+
 #endif
