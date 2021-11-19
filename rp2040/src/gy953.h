@@ -8,6 +8,7 @@ Version 0.01, early aplha stage!
 #include <pico/stdlib.h>
 #include <hardware/spi.h>
 #include <hardware/gpio.h>
+#include <hardware/sync.h>
 
 #ifndef gy953_h_
 #define gy953_h_

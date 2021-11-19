@@ -51,10 +51,8 @@ bool sensors_update(){
     return gy953_update(&mag, 0);
 }
 
-
-
 // store function in ram to avoid slow loading from flash
-void __attribute__((noinline, long_call, section(".time_critical"))) sensors_read(sensor_data* data){
+void sensors_read(sensor_data* data){
     // read voltage and current
     adc_select_input(1);
     // Vin = (raw / (2^16 / 3.3)) / (R2 / (R1 + R2)) -> R1 = 10k, R2 = 1k

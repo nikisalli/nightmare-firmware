@@ -6,6 +6,7 @@
 #include <pico/stdlib.h>
 #include <hardware/gpio.h>
 #include <hardware/adc.h>
+#include <hardware/sync.h>
 #include <gy953.h>
 
 typedef struct sensor_data {
