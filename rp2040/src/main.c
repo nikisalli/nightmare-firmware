@@ -2,7 +2,7 @@
 #include <sensors.h>
 
 int main (void) {
-    usb_serial_init ();
+    usb_serial_init();
     sensors_init();
 
     char buf[200];
@@ -10,6 +10,7 @@ int main (void) {
     sensor_data sd;
 
     while (1) {
+        usb_serial_handle();
         if (sensors_update()) {
             sensors_read(&sd);
             sprintf(buf, "TIME: %ld R: %.2f P: %.2f Y: %.2f V: %.2f A: %.2f W: %.2f C°: %.1f lc: %ld %ld %ld %ld %ld %ld\n",
