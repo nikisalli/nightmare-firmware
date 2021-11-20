@@ -20,9 +20,7 @@
 #define USBD_MAX_POWER_MA 250
 
 #define USBD_ITF_CDC_0 0
-#define USBD_ITF_CDC_1 2
-#define USBD_ITF_CDC_2 4
-#define USBD_ITF_MAX 6
+#define USBD_ITF_MAX 2
 
 #define USBD_CDC_0_EP_CMD 0x81
 #define USBD_CDC_0_EP_OUT 0x02

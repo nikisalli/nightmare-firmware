@@ -10,13 +10,6 @@
 #define LED_PIN 25
 #define LED1_PIN 24
 
-void core1_entry(void) {
-	tusb_init();
-	while (1) {
-		tud_task();
-	}
-}
-
 int main (void) {
     /* Pinmux */
     gpio_set_function(4, GPIO_FUNC_UART);
@@ -32,8 +25,7 @@ int main (void) {
 	gpio_init(LED1_PIN);
 	gpio_set_dir(LED1_PIN, GPIO_OUT);
 
-	multicore_launch_core1(core1_entry);
-
+    tusb_init();
     sensors_init();
 
     char buf[200];
@@ -41,6 +33,8 @@ int main (void) {
     sensor_data sd;
 
     while (1) {
+        tud_task();
+
         // update sensors
         if (sensors_update()) {
             sensors_read(&sd);
