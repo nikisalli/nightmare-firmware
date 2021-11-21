@@ -35,6 +35,7 @@ typedef struct {
 } uart_data_t;
 
 void usb_serial_init(void);
+void usb_serial_handle(void);
 uint8_t usb_com_read();
 void usb_com_write(uint8_t* buf, uint32_t len);
 void usb_com_print(char* buf);

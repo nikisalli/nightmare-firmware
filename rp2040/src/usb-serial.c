@@ -183,6 +183,23 @@ void core1_entry(void) {
 	}
 }
 
+/*
+void usb_serial_handle(void) {
+	tud_task();
+
+	gpio_put(LED_PIN, 1);
+	for (int itf = 0; itf < CFG_TUD_CDC; itf++) {
+		if (tud_cdc_n_connected(itf)) {
+			usb_read_bytes(itf);
+			usb_write_bytes(itf);
+			uart_read_bytes(itf);
+			uart_write_bytes(itf);
+		}
+	}
+	gpio_put(LED_PIN, 0);
+}
+*/
+
 void usb_serial_init(void) {
 	for (int itf = 0; itf < CFG_TUD_CDC; itf++){
 		init_uart_data(itf);
@@ -192,6 +209,8 @@ void usb_serial_init(void) {
 	gpio_set_dir(LED_PIN, GPIO_OUT);
 	gpio_init(LED1_PIN);
 	gpio_set_dir(LED1_PIN, GPIO_OUT);
+
+	// tusb_init();
 
 	multicore_launch_core1(core1_entry);
 }
