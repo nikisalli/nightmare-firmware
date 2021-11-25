@@ -37,6 +37,7 @@ typedef struct {
 void usb_serial_init();
 void usb_serial_handle();
 uint8_t usb_com_read();
+void usb_com_write_char(uint8_t val);
 void usb_com_write(uint8_t* buf, uint32_t len);
 void usb_com_print(char* buf);
 uint32_t usb_com_usb_buff_index();
