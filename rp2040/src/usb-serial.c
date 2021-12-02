@@ -71,10 +71,23 @@ void uart_write_bytes(uint8_t itf) {
 	if (ui->inst != 0 && !fifo_is_empty(ud->usb_fifo_ptr)) {
 		uint8_t val;
 		mutex_enter_blocking(&ud->usb_mtx);
+
+		// disable uart rx to not loop back the transmitted data
+		if (ui->inst == uart1) {
+			gpio_set_oeover(ui->rx_pin, GPIO_OVERRIDE_HIGH);
+		}
+
 		for (int i = 0; i < fifo_count(ud->usb_fifo_ptr); i++) {
 			fifo_read(ud->usb_fifo_ptr, val);
 			uart_putc(ui->inst, val);
 		}
+		uart_tx_wait_blocking(ui->inst);
+
+		// re enable uart rx
+		if (ui->inst == uart1) {
+			gpio_set_oeover(ui->rx_pin, GPIO_OVERRIDE_NORMAL);
+		}
+
 		mutex_exit(&ud->usb_mtx);
 	}
 }
